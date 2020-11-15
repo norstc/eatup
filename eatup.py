@@ -14,10 +14,29 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 SCREEN_TITLE = u"光盘行动"
 
-SPRITE_SMALLBUN_SCALING = 0.1
-SPRITE_CHARACTER_SCALING = 0.1
+SPRITE_SMALLBUN_SCALING = 0.2
+SPRITE_CHARACTER_SCALING = 0.2
 
 MUSIC_VOLUME = 0.2
+
+
+class FallingBun(arcade.Sprite):
+    """ falling down buns """
+    def update(self):
+        """ move the buns """
+        # fall down
+        self.center_y -= 2
+
+        # if it go off the screen move it back to the top
+        if self.top < 0:
+            self.top = SCREEN_HEIGHT
+
+
+class RisingBun(arcade.Sprite):
+    def update(self):
+        self.center_y += 2
+        if self.top > SCREEN_HEIGHT:
+            self.top = 0
 
 
 class InstructionView(arcade.View):
@@ -51,7 +70,7 @@ class GameOverView(arcade.View):
     def __init__(self):
         """ this is run once when we change to this view """
         super().__init__()
-        self.game_over_texture = arcade.load_texture("sources/images/game_over.jpg")
+        self.game_over_texture = arcade.load_texture("sources/images/game_over_1.png")
 
         """ reset the viewport """
         arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
@@ -93,7 +112,18 @@ class EatUp(arcade.View):
 
     def __init__(self):
         super().__init__()
-        arcade.set_background_color(arcade.color.AMAZON)
+        self.scaling = SPRITE_CHARACTER_SCALING
+        self.player_sprite = arcade.Sprite("sources/images/20130224100445921.png", self.scaling)
+
+        # score
+        self.score = 0
+
+        # sprite list
+        self.player_list = arcade.SpriteList()
+        self.smallbun_list = arcade.SpriteList()
+
+        # background
+        arcade.set_background_color(arcade.color.WHITE)
 
         # don't display the mouse
         self.window.set_mouse_visible(False)
@@ -114,6 +144,41 @@ class EatUp(arcade.View):
         self.bite_sound = arcade.load_sound("sources/sounds/coin1.wav")
         self.you_win_sound = arcade.load_sound("sources/sounds/upgrade1.wav")
         self.game_over_sound = arcade.load_sound("sources/sounds/gameover1.wav")
+
+        # levels control
+        self.level = 1
+
+    def level_1(self):
+        # create small buns
+        for i in range(10):
+            smallbun = arcade.Sprite("sources/images/chicken.png", SPRITE_SMALLBUN_SCALING)
+
+            # positions of buns
+            smallbun.center_x = random.randrange(SCREEN_WIDTH)
+            smallbun.center_y = random.randrange(SCREEN_HEIGHT - 100)
+
+            # angles of buns
+            smallbun.angle = random.randrange(30)
+            smallbun.change_angle = random.randrange(-5, 6)
+
+            # add buns to list
+            self.smallbun_list.append(smallbun)
+
+    def level_2(self):
+        """ falling """
+        for i in range(10):
+            smallbun = FallingBun("sources/images/pizza.png", SPRITE_SMALLBUN_SCALING)
+            smallbun.center_x = random.randrange(SCREEN_WIDTH)
+            smallbun.center_y = random.randrange(SCREEN_HEIGHT, SCREEN_HEIGHT * 2)
+            self.smallbun_list.append(smallbun)
+
+    def level_3(self):
+        """ rising """
+        for i in range(10):
+            smallbun = RisingBun("sources/images/sausage.png", SPRITE_SMALLBUN_SCALING)
+            smallbun.center_x = random.randrange(SCREEN_WIDTH)
+            smallbun.center_y = random.randrange(-SCREEN_HEIGHT, 0)
+            self.smallbun_list.append(smallbun)
 
     def advanced_song(self):
         """ advanced our pointer to next song, but doesn't start it"""
@@ -147,8 +212,6 @@ class EatUp(arcade.View):
         self.play_song()
 
         # create sprite lists
-        self.player_list = arcade.SpriteList()
-        self.smallbun_list = arcade.SpriteList()
 
         # score
         self.score = 0
@@ -156,21 +219,13 @@ class EatUp(arcade.View):
         self.total_time = 20.0
 
         # set up the player
-        self.player_sprite = arcade.Sprite("sources/images/monster.png", self.scaling)
         self.player_sprite.center_x = random.randrange(SCREEN_WIDTH)
         self.player_sprite.center_y = random.randrange(SCREEN_HEIGHT - 100)
         self.player_list.append(self.player_sprite)
 
-        # create small buns
-        for i in range(20):
-            smallbun = arcade.Sprite("sources/images/smallbun.jfif", SPRITE_SMALLBUN_SCALING)
-
-            # positions of buns
-            smallbun.center_x = random.randrange(SCREEN_WIDTH)
-            smallbun.center_y = random.randrange(SCREEN_HEIGHT - 100)
-
-            # add buns to list
-            self.smallbun_list.append(smallbun)
+        # level set up
+        self.level = 1
+        self.level_1()
 
     def on_draw(self):
         arcade.start_render()
@@ -179,7 +234,7 @@ class EatUp(arcade.View):
         # drawing code
         # put text on the screen
         output = f"Score:{self.score}"
-        arcade.draw_text(output, 20, SCREEN_HEIGHT - 32, arcade.color.WHITE, 16)
+        arcade.draw_text(output, 20, SCREEN_HEIGHT - 32, arcade.color.BLACK, 16)
 
         # draw timer
         minutes = int(self.total_time) // 60
@@ -194,20 +249,37 @@ class EatUp(arcade.View):
 
     def update(self, delta_time):
         """ all logic to move, and the game logic """
+
+        # call update of all sprites
+        self.smallbun_list.update()
+        self.player_list.update()
+
         # check collisions
         buns_hit_list = arcade.check_for_collision_with_list(self.player_sprite, self.smallbun_list)
 
         for smallbun in buns_hit_list:
-            smallbun.kill()
+            smallbun.remove_from_sprite_lists()
             self.bite_sound.play()
             self.score += 1
 
-        if self.score > 10:
-            self.scaling = self.score / 100
+        # check levels
+        if len(self.smallbun_list) == 0 and self.level == 1:
+            self.level += 1
+            self.level_2()
+            self.scaling = (self.level + 1) / 10
             self.player_sprite._set_scale(self.scaling)
 
+        if len(self.smallbun_list) == 0 and self.level == 2:
+            self.level += 1
+            self.level_3()
+            self.scaling = (self.level + 1) / 10
+            self.player_sprite._set_scale(self.scaling)
+
+
+
+
         # change to the game over view
-        if self.score == 20 and self.total_time > 0:
+        if self.score == 30 and self.total_time > 0:
             self.stop_song()
             self.you_win_sound.play()
             game_view = YouWinView()
@@ -215,7 +287,7 @@ class EatUp(arcade.View):
 
         if self.total_time < 0:
             self.stop_song()
-            if self.score == 20:
+            if self.score == 30:
                 self.you_win_sound.play()
                 game_view = YouWinView()
                 self.window.show_view(game_view)

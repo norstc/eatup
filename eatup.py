@@ -1,12 +1,14 @@
 # -*-coding:utf-8-*-
 # for zx
 __author__ = "Youda"
+
 from numpy import random
 
-print("Be a good boy and eat up your foods")
+print("Be a good child and eat up your foods")
 
 import arcade
 import random
+import time
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -14,6 +16,9 @@ SCREEN_TITLE = u"光盘行动"
 
 SPRITE_SMALLBUN_SCALING = 0.1
 SPRITE_CHARACTER_SCALING = 0.1
+
+MUSIC_VOLUME = 0.2
+
 
 class InstructionView(arcade.View):
     def on_show(self):
@@ -42,6 +47,7 @@ class InstructionView(arcade.View):
 
 class GameOverView(arcade.View):
     """ view to show game over """
+
     def __init__(self):
         """ this is run once when we change to this view """
         super().__init__()
@@ -61,8 +67,29 @@ class GameOverView(arcade.View):
         self.window.show_view(game_view)
 
 
+class YouWinView(arcade.View):
+    """ winner is the one eat them up """
+
+    def __init__(self):
+        """ this is run once when we change to this view """
+        super().__init__()
+        self.you_win_texture = arcade.load_texture("sources/images/you_win.jpg")
+
+        """ reset the viewport """
+        arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
+
+    def on_draw(self):
+        arcade.start_render()
+        self.you_win_texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
+
+    def on_mouse_press(self, _x, _y, _button, _modifiers):
+        game_view = EatUp()
+        game_view.setup()
+        self.window.show_view(game_view)
+
+
 class EatUp(arcade.View):
-    '''main application class'''
+    """main application class"""
 
     def __init__(self):
         super().__init__()
@@ -72,19 +99,66 @@ class EatUp(arcade.View):
         self.window.set_mouse_visible(False)
         self.scaling = SPRITE_CHARACTER_SCALING
 
+        # timer
+        self.total_time = 20.0
+
+        # music
+        # from Anttis:
+        # https: // www.soundclick.com / artist / default.cfm?bandid = 1277008 & content = songs
+        # https: // www.reddit.com / r / gameassets / comments / ewo5iu / i_have_released_my_2000_instrumental_pieces_free /
+        self.music_list = []
+        self.current_song = 0
+        self.music = None
+
+        # sound
+        self.bite_sound = arcade.load_sound("sources/sounds/coin1.wav")
+        self.you_win_sound = arcade.load_sound("sources/sounds/upgrade1.wav")
+        self.game_over_sound = arcade.load_sound("sources/sounds/gameover1.wav")
+
+    def advanced_song(self):
+        """ advanced our pointer to next song, but doesn't start it"""
+        self.current_song += 1
+        if self.current_song >= len(self.music_list):
+            self.current_song = 0
+
+    def play_song(self):
+        """ play the current song """
+        # stop if already playing
+        if self.music:
+            self.music.stop()
+
+        # play next song
+        self.music = arcade.Sound(self.music_list[self.current_song], streaming=True)
+        self.music.play(MUSIC_VOLUME)
+        # this is a delay for update, if we don't do this,
+        # update will think the music is over and advance us to next song
+        time.sleep(0.03)
+
+    def stop_song(self):
+        """ stop the song """
+        if self.music:
+            self.music.stop()
+
     def setup(self):
         """ Setup the game  and initial the variables """
+        # list of musics
+        self.music_list = ["sources/music/funkyrobot.mp3"]
+        self.current_song = 0
+        self.play_song()
+
         # create sprite lists
         self.player_list = arcade.SpriteList()
         self.smallbun_list = arcade.SpriteList()
 
         # score
         self.score = 0
+        # timer reset
+        self.total_time = 20.0
 
         # set up the player
         self.player_sprite = arcade.Sprite("sources/images/monster.png", self.scaling)
-        self.player_sprite.center_x = 50
-        self.player_sprite.center_y = 50
+        self.player_sprite.center_x = random.randrange(SCREEN_WIDTH)
+        self.player_sprite.center_y = random.randrange(SCREEN_HEIGHT - 100)
         self.player_list.append(self.player_sprite)
 
         # create small buns
@@ -93,12 +167,10 @@ class EatUp(arcade.View):
 
             # positions of buns
             smallbun.center_x = random.randrange(SCREEN_WIDTH)
-            smallbun.center_y = random.randrange(SCREEN_HEIGHT)
+            smallbun.center_y = random.randrange(SCREEN_HEIGHT - 100)
 
             # add buns to list
             self.smallbun_list.append(smallbun)
-
-        pass
 
     def on_draw(self):
         arcade.start_render()
@@ -107,7 +179,13 @@ class EatUp(arcade.View):
         # drawing code
         # put text on the screen
         output = f"Score:{self.score}"
-        arcade.draw_text(output, 10, 550, arcade.color.WHITE, 14)
+        arcade.draw_text(output, 20, SCREEN_HEIGHT - 32, arcade.color.WHITE, 16)
+
+        # draw timer
+        minutes = int(self.total_time) // 60
+        seconds = int(self.total_time) % 60
+        total_timer = f"{minutes:02d}:{seconds:02d}"
+        arcade.draw_text(total_timer, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 32, arcade.color.RED, 16)
 
     def on_mouse_motion(self, x, y, dx, dy):
         """ handle mouse motion """
@@ -121,21 +199,42 @@ class EatUp(arcade.View):
 
         for smallbun in buns_hit_list:
             smallbun.kill()
+            self.bite_sound.play()
             self.score += 1
 
         if self.score > 10:
             self.scaling = self.score / 100
             self.player_sprite._set_scale(self.scaling)
 
-        """ change to the game over view """
-        if self.score  == 20:
-            game_view = GameOverView()
+        # change to the game over view
+        if self.score == 20 and self.total_time > 0:
+            self.stop_song()
+            self.you_win_sound.play()
+            game_view = YouWinView()
             self.window.show_view(game_view)
-        pass
+
+        if self.total_time < 0:
+            self.stop_song()
+            if self.score == 20:
+                self.you_win_sound.play()
+                game_view = YouWinView()
+                self.window.show_view(game_view)
+            else:
+                self.game_over_sound.play()
+                game_view = GameOverView()
+                self.window.show_view(game_view)
+
+        # timer update
+        self.total_time -= delta_time
+
+        # music update
+        position = self.music.get_stream_position()
+        # the position pointer is reset to  0 right after  we finish the song,
+        # This make it very difficult  to figure out if we just started playing or we have done playing
 
 
 def main():
-    window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT,SCREEN_TITLE)
+    window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     start_view = InstructionView()
     window.show_view(start_view)
     arcade.run()

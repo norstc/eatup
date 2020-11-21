@@ -87,15 +87,15 @@ class Food(arcade.Sprite):
         if self.classic == "vege":
             self.energy = random.randrange(10, 20, 1)
         elif self.classic == "fruit":
-            self.energy = random.randrange(20, 40, 1)
+            self.energy = random.randrange(10, 30, 1)
         else:
-            self.energy = random.randrange(40, 60, 1)
+            self.energy = random.randrange(30, 50, 1)
 
     def get_energy(self):
         return self.energy
 
     def draw_energy_bar(self):
-        arcade.draw_text(f"{self.get_energy()}", self.center_x + self.width / 2, self.center_y, arcade.color.WHITE, 16)
+        arcade.draw_text(f"{self.get_energy()}", self.center_x + self.width / 2, self.center_y, arcade.color.BLACK, 16)
         # arcade.draw_rectangle_filled(self.center_x, self.center_y + self.height / 2 + 10, self.get_energy(), self.height/ 10, arcade.color.RED_PURPLE)
 
 
@@ -248,22 +248,18 @@ class StartTextButton(TextButton):
 
 
 class InstructionView(arcade.View):
-    def on_show(self):
-        """ this is run once when we change to this view """
-        arcade.set_background_color(arcade.color.DARK_BLUE)
-
+    def __init__(self):
+        super().__init__()
+        self.instruction_texture = arcade.load_texture("sources/images/instruction.png")
         """ reset the viewport , necessary if we have a scrolling game and we 
-        need to reset the viewport to the start point so we can see what we draw
-        """
+                need to reset the viewport to the start point so we can see what we draw
+                """
         arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
 
     def on_draw(self):
         """ draw this view """
         arcade.start_render()
-        arcade.draw_text("I will eat them up.", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
-                         arcade.color.WHITE, font_size=50, anchor_x="center")
-        arcade.draw_text("Click to begin", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 75,
-                         arcade.color.WHITE, font_size=50, anchor_x="center")
+        self.instruction_texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
 
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         """ if the user click mouse, start the game """

@@ -38,7 +38,7 @@ VERTICAL_MARGIN_PERCENT = 0.1
 HORIZONTAL_MARGIN_PERCENT = 0.1
 
 FOOD_START_X = SCREEN_WIDTH / 12
-FOOD_START_Y = SCREEN_HEIGHT / 3 + DISH_HEIGHT
+FOOD_START_Y = SCREEN_HEIGHT / 3 + FOOD_HEIGHT * 2
 FOOD_X_SPACING = SCREEN_WIDTH / 6
 FOOD_Y_SPACING = FOOD_HEIGHT + FOOD_HEIGHT * VERTICAL_MARGIN_PERCENT
 
@@ -47,12 +47,12 @@ FOOD_CLASSIC = ["fruit", "vege", "food"]
 FOOD_VALUES = ["1", "2", "3", "4", "5", "6"]
 
 # foodie constants
-FOODIE_CLASSIC = ["man"]
-FOODIE_VALUES = ["1"]
+FOODIE_CLASSIC = ["man","girl", "boy"]
+FOODIE_VALUES = ["1", "2", "3", "4"]
 
 # dish constants
 # four top dishes
-DISH_START_Y = SCREEN_HEIGHT / 3 - FOOD_HEIGHT / 2
+DISH_START_Y = SCREEN_HEIGHT / 3
 DISH_START_X = SCREEN_WIDTH / 8
 DISH_X_SPACING = SCREEN_WIDTH / 4
 
@@ -85,18 +85,18 @@ class Food(arcade.Sprite):
 
     def set_energy(self):
         if self.classic == "vege":
-            self.energy = random.randrange(10, 20, 10)
+            self.energy = random.randrange(10, 20, 1)
         elif self.classic == "fruit":
-            self.energy = random.randrange(20, 40, 10)
+            self.energy = random.randrange(20, 40, 1)
         else:
-            self.energy = random.randrange(40, 60, 10)
+            self.energy = random.randrange(40, 60, 1)
 
     def get_energy(self):
         return self.energy
 
     def draw_energy_bar(self):
-        arcade.draw_text(f"{self.get_energy()}", self.center_x + self.width / 2 , self.center_y ,arcade.color.WHITE)
-        #arcade.draw_rectangle_filled(self.center_x, self.center_y + self.height / 2 + 10, self.get_energy(), self.height/ 10, arcade.color.RED_PURPLE)
+        arcade.draw_text(f"{self.get_energy()}", self.center_x + self.width / 2, self.center_y, arcade.color.WHITE, 16)
+        # arcade.draw_rectangle_filled(self.center_x, self.center_y + self.height / 2 + 10, self.get_energy(), self.height/ 10, arcade.color.RED_PURPLE)
 
 
 class Foodie(arcade.Sprite):
@@ -111,7 +111,7 @@ class Foodie(arcade.Sprite):
         self.chosen = False
 
         # foodie's hungrylevel
-        self.hungry_level = random.randrange(20, 100, 20)
+        self.hungry_level = random.randrange(50, 90, 1)
 
         # call the parent
         super().__init__(self.image_file_name, scale)
@@ -122,18 +122,18 @@ class Foodie(arcade.Sprite):
     def get_chosen(self):
         return self.chosen
 
-
-    def set_hungry_level(self,hungry_level):
+    def set_hungry_level(self, hungry_level):
         self.hungry_level = hungry_level
 
     def get_hungry_level(self):
         return self.hungry_level
 
     def draw_health_bar(self):
-        arcade.draw_text(f"{self.hungry_level}", self.center_x + self.width /2 , self.center_y,arcade.color.RED)
-        arcade.draw_xywh_rectangle_outline(self.center_x - 50, self.center_y + 10 + self.height / 2, 100, 10, arcade.color.BLACK)
-        arcade.draw_xywh_rectangle_filled(self.center_x - 50, self.center_y + 10 + self.height / 2, 100 - self.hungry_level, 10, arcade.color.RED)
-
+        arcade.draw_text(f"{self.hungry_level}", self.center_x + self.width / 2, self.center_y, arcade.color.RED, 16)
+        arcade.draw_xywh_rectangle_outline(self.center_x - 50, self.center_y + 10 + self.height / 2, 100, 10,
+                                           arcade.color.BLACK)
+        arcade.draw_xywh_rectangle_filled(self.center_x - 50, self.center_y + 10 + self.height / 2,
+                                          100 - self.hungry_level, 10, arcade.color.RED)
 
 
 class TextButton:
@@ -300,7 +300,7 @@ class YouWinView(arcade.View):
     def __init__(self):
         """ this is run once when we change to this view """
         super().__init__()
-        self.you_win_texture = arcade.load_texture("sources/images/you_win.jpg")
+        self.you_win_texture = arcade.load_texture("sources/images/full.png")
 
         """ reset the viewport """
         arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
@@ -308,6 +308,44 @@ class YouWinView(arcade.View):
     def on_draw(self):
         arcade.start_render()
         self.you_win_texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
+
+    def on_mouse_press(self, _x, _y, _button, _modifiers):
+        game_view = OrderWise()
+        game_view.setup()
+        self.window.show_view(game_view)
+
+
+class HungryView(arcade.View):
+    """ food is not enough for the foodie, we need more food """
+
+    def __init__(self):
+        super().__init__()
+        self.hungry_texture = arcade.load_texture("sources/images/hungry.jpeg")
+        # reset the view
+        arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
+
+    def on_draw(self):
+        arcade.start_render()
+        self.hungry_texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
+
+    def on_mouse_press(self, _x, _y, _button, _modifiers):
+        game_view = OrderWise()
+        game_view.setup()
+        self.window.show_view(game_view)
+
+
+class FineView(arcade.View):
+    """ food is meet the demand , 70% percentage of foodie hungry_level, that what we what """
+
+    def __init__(self):
+        super().__init__()
+        self.fine_texture = arcade.load_texture("sources/images/7.png")
+        # reset the view
+        arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
+
+    def on_draw(self):
+        arcade.start_render()
+        self.fine_texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_WIDTH / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
 
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         game_view = OrderWise()
@@ -326,6 +364,7 @@ class OrderWise(arcade.View):
         self.score = 0
 
         # sprite list
+        self.foodie = None
         self.foodie_list = arcade.SpriteList()
         self.food_list = None
         self.button_list = arcade.SpriteList()
@@ -361,18 +400,22 @@ class OrderWise(arcade.View):
         # levels control
         self.level = 1
 
+        # tip
+        self.tip_texture = arcade.load_texture("sources/images/tip1.png")
+
     def level_1(self):
         # set up the player
         for foodie_classic in FOODIE_CLASSIC:
             for foodie_value in FOODIE_VALUES:
-                foodie = Foodie(foodie_classic, foodie_value,SPRITE_FOODIE_SCALING)
+                foodie = Foodie(foodie_classic, foodie_value, SPRITE_FOODIE_SCALING)
                 foodie.position = SCREEN_WIDTH / 2, FOODIE_HEIGHT / 2
                 self.foodie_list.append(foodie)
+        # shuffle the foodie
+        for pos1 in range(len(self.foodie_list)):
+            pos2 = random.randrange(len(self.foodie_list))
+            self.foodie_list[pos1], self.foodie_list[pos2] = self.foodie_list[pos2], self.foodie_list[pos1]
 
-        #player_sprite = arcade.Sprite("sources/images/20130224100445921.png", self.scaling)
-        #player_sprite.center_x = 400
-        #player_sprite.center_y = 50
-        #self.foodie_list.append(player_sprite)
+        self.foodie = self.foodie_list[0]
 
         # create food list
         self.food_list = arcade.SpriteList()
@@ -458,18 +501,21 @@ class OrderWise(arcade.View):
 
         # buttons, all levels need this button
         self.button_list = []
-        play_button = StartTextButton(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 50, self.check_result)
+        play_button = StartTextButton(SCREEN_WIDTH - FOOD_WIDTH, FOOD_HEIGHT, self.check_result)
         self.button_list.append(play_button)
 
     def on_draw(self):
         arcade.start_render()
+        self.tip_texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 100, SCREEN_WIDTH, FOOD_HEIGHT)
         self.dish_list.draw()
+        self.foodie.draw()
+        self.foodie.draw_health_bar()
         self.food_list.draw()
         for food in self.food_list:
             food.draw_energy_bar()
-        self.foodie_list.draw()
-        for foodie in self.foodie_list:
-            foodie.draw_health_bar()
+        #self.foodie_list.draw()
+        #for foodie in self.foodie_list:
+         #   foodie.draw_health_bar()
 
         # drawing code
         # put text on the screen
@@ -547,17 +593,34 @@ class OrderWise(arcade.View):
                 total_energy += food.get_energy()
                 food.set_chosen(False)
 
-        foodie = self.foodie_list[-1]
-        if total_energy != foodie.get_hungry_level():
-            print(f"total_energy is : {total_energy}" )
+        foodie = self.foodie_list[0]
+        if total_energy == foodie.get_hungry_level():
+            # perfect, the food is match foodie's hungry level, you win
+            print(f"total_energy is : {total_energy}")
             print(f"foodie hungry level is {foodie.get_hungry_level()}")
-            self.game_over_sound.play()
-            game_view = GameOverView()
-            self.window.show_view(game_view)
-        else:
             self.score += 1
             self.you_win_sound.play()
             game_view = YouWinView()
+            self.window.show_view(game_view)
+
+        elif total_energy <= foodie.get_hungry_level() * 2 / 3:
+            # the food is not enough, we need more food
+            print(f"total_energy is {total_energy}")
+            print(f"foodie hungry level is {foodie.get_hungry_level()}")
+            self.game_over_sound.play()
+            game_view = HungryView()
+            self.window.show_view(game_view)
+        elif foodie.get_hungry_level() * 2 / 3 < total_energy <= foodie.get_hungry_level():
+            # just fine
+            print(f"total_energy is {total_energy}")
+            print(f"foodie hungry level is {foodie.get_hungry_level()}")
+            self.you_win_sound.play()
+            game_view = FineView()
+            self.window.show_view(game_view)
+        else:
+            # the food is left on the table, it's not good.
+            self.game_over_sound.play()
+            game_view = GameOverView()
             self.window.show_view(game_view)
 
         pass
@@ -569,23 +632,9 @@ class OrderWise(arcade.View):
         self.food_list.update()
         self.foodie_list.update()
 
-        # change to the game over view
-        if self.score == 3 and self.total_time > 0:
-            self.stop_song()
-            self.you_win_sound.play()
-            game_view = YouWinView()
-            self.window.show_view(game_view)
-
+        # check result when time out
         if self.total_time < 0:
-            self.stop_song()
-            if self.score == 3:
-                self.you_win_sound.play()
-                game_view = YouWinView()
-                self.window.show_view(game_view)
-            else:
-                self.game_over_sound.play()
-                game_view = GameOverView()
-                self.window.show_view(game_view)
+            self.check_result()
 
         # timer update
         self.total_time -= delta_time
